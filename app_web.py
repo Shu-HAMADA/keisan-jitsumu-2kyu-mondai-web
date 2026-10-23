@@ -9,9 +9,6 @@ import streamlit as st
 import docx
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
 
 # ページ基本設定
 st.set_page_config(
@@ -24,7 +21,6 @@ st.set_page_config(
 # 1. 多言語翻訳辞書（全9言語対応）
 # ---------------------------------------------------------
 LANG_OPTIONS = [
-    "なし（日本語のみ）",
     "英語 (English)",
     "ネパール語 (नेपाली)",
     "シンハラ語 (සිංහල)",
@@ -265,7 +261,7 @@ def get_date_pair(start_month: int, start_day: int, days: int, is_ryotan: bool):
     return d1, d2, "＋".join(breakdown)
 
 # ---------------------------------------------------------
-# 3. 全20パターン作問ロジック
+# 3. 全20パターン作問ロジック（exe版と完全同一）
 # ---------------------------------------------------------
 modes_list = ["切り上げ", "四捨五入", "切り捨て"]
 
@@ -276,7 +272,7 @@ def gen_p1(idx):
         gross_price = unit_base * Decimal('12') + Decimal(random.choice(['0.10', '0.20', '0.30', '0.50', '0.70']))
         qty_doz = random.randint(35, 85) * 10 + random.choice([2, 5, 7])
         profit_pct = random.randint(12, 26)
-        rate = Decimal(random.randint(14000, 15800)) / Decimal('100')
+        rate = Decimal(random.randint(11000, 15500)) / Decimal('100')
         raw_val = (gross_price / Decimal('12')) * Decimal(qty_doz) * (Decimal('1') + Decimal(profit_pct)/Decimal('100')) * rate
         ans = round_yen(raw_val, mode)
         q_text = f"1グロス＄{gross_price:.2f}の商品を{qty_doz:,}ダース販売するため、原価の{profit_pct}％の利益を見込んで定価をつけた。定価は円貨でいくらですか。ただし、＄1＝￥{rate:.2f}とする。（計算の最終で円未満{mode}）"
@@ -285,7 +281,7 @@ def gen_p1(idx):
         doz_price = Decimal(random.randint(3000, 48000)) / Decimal('100')
         qty_pcs = random.randint(120, 580) * 12
         profit_pct = random.randint(12, 25)
-        rate = Decimal(random.randint(14000, 15800)) / Decimal('100')
+        rate = Decimal(random.randint(11000, 15500)) / Decimal('100')
         raw_val = (doz_price / Decimal('12')) * Decimal(qty_pcs) * (Decimal('1') + Decimal(profit_pct)/Decimal('100')) * rate
         ans = round_yen(raw_val, mode)
         q_text = f"1ダース＄{doz_price:.2f}の商品を{qty_pcs:,}個販売するため、原価の{profit_pct}％の利益を見込んで定価をつけた。定価は円貨でいくらですか。ただし、＄1＝￥{rate:.2f}とする。（計算の最終で円未満{mode}）"
@@ -432,8 +428,8 @@ def gen_p12(idx):
 
 def gen_p13(idx):
     usd = Decimal(random.randint(450000, 2900000)) / Decimal('100')
-    rate_usd = Decimal(random.randint(14200, 15800)) / Decimal('100')
-    rate_eur = rate_usd + Decimal(random.randint(1000, 2200)) / Decimal('100')
+    rate_usd = Decimal(random.randint(11000, 15500)) / Decimal('100')
+    rate_eur = rate_usd + Decimal(random.randint(1100, 2600)) / Decimal('100')
     raw_eur = usd * rate_usd / rate_eur
     ans_eur = round_cent(raw_eur)
     q_text = f"＄{usd:,.2f}は、€（ユーロ）でいくらですか。ただし、＄1＝￥{rate_usd:.2f}、€1＝￥{rate_eur:.2f}とする。（セント未満四捨五入）"
@@ -442,8 +438,8 @@ def gen_p13(idx):
 
 def gen_p14(idx):
     eur = Decimal(random.randint(250000, 950000)) / Decimal('100')
-    rate_usd = Decimal(random.randint(14200, 15800)) / Decimal('100')
-    rate_eur = rate_usd + Decimal(random.randint(1000, 2200)) / Decimal('100')
+    rate_usd = Decimal(random.randint(10800, 15600)) / Decimal('100')
+    rate_eur = rate_usd + Decimal(random.randint(1100, 2500)) / Decimal('100')
     raw_usd = eur * rate_eur / rate_usd
     ans_usd = round_cent(raw_usd)
     q_text = f"€{eur:,.2f}は、米貨でいくらですか。ただし、€1＝￥{rate_eur:.2f}、＄1＝￥{rate_usd:.2f}とする。（セント未満四捨五入）"
@@ -568,17 +564,30 @@ generators = [
 ]
 
 pattern_names = [
-    "① 外貨・グロス/ダース換算", "② 風袋・減量からの純量計算", "③ 諸掛込原価の利益率",
-    "④ 値引と増量の有利比較", "⑤ 損益からの定価・原価逆算", "⑥ 目標利益からの定価逆算",
-    "⑦ 仲立人 手取金→支払総額", "⑧ 仲立人 支払総額→手取金", "⑨ 仲立人 手数料合計の逆算",
-    "⑩ 販売委託の送金額", "⑪ 販売委託の売上高逆算", "⑫ 買付委託の請求額",
-    "⑬ 為替 ドル(＄)→ユーロ(€)", "⑭ 為替 ユーロ(€)→米貨(＄)", "⑮ 借入期間（年月）逆算",
-    "⑯ 貸付利率逆算（片落とし）", "⑰ 元利合計算出", "⑱ 元金逆算（年月）",
-    "⑲ 割引日数逆算", "⑳ 割引率・日付・額面逆算"
+    "① 外貨・グロス/ダース換算",
+    "② 風袋・減量からの純量計算",
+    "③ 諸掛込原価の利益率",
+    "④ 値引と増量の有利比較",
+    "⑤ 損益からの定価・原価逆算",
+    "⑥ 目標利益からの定価逆算",
+    "⑦ 仲立人 手取金→支払総額",
+    "⑧ 仲立人 支払総額→手取金",
+    "⑨ 仲立人 手数料合計の逆算",
+    "⑩ 販売委託の送金額",
+    "⑪ 販売委託の売上高逆算",
+    "⑫ 買付委託の請求額",
+    "⑬ 為替 ドル(＄)→ユーロ(€)",
+    "⑭ 為替 ユーロ(€)→米貨(＄)",
+    "⑮ 借入期間（年月）逆算",
+    "⑯ 貸付利率逆算（片落とし）",
+    "⑰ 元利合計算出",
+    "⑱ 元金逆算（年月）",
+    "⑲ 割引日数逆算",
+    "⑳ 割引率・日付・額面逆算"
 ]
 
 # ---------------------------------------------------------
-# 4. Wordファイル（BytesIO）生成
+# 4. Word（.docx）美麗組版 生成関数（exe版と完全同一）
 # ---------------------------------------------------------
 def create_word_bytes(questions, mode_name, enable_trans, target_lang):
     doc = docx.Document()
@@ -587,54 +596,65 @@ def create_word_bytes(questions, mode_name, enable_trans, target_lang):
         sec.bottom_margin = Inches(0.8)
         sec.left_margin = Inches(0.8)
         sec.right_margin = Inches(0.8)
-        
+
     doc.styles['Normal'].font.name = 'メイリオ'
     doc.styles['Normal'].font.size = Pt(10.5)
 
+    # 表紙 / ヘッダー
     title = doc.add_paragraph()
     r_t = title.add_run("計算実務能力検定試験 2級対策 ドリル")
     r_t.font.size = Pt(16)
     r_t.font.bold = True
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
+    title.paragraph_format.space_after = Pt(4)
+
     trans_info = f" ［解説翻訳: {target_lang}］" if enable_trans else ""
     sub = doc.add_paragraph(f"商業計算 第1問（文章問題） 全 {len(questions)} 問 ［モード: {mode_name}］{trans_info}")
     sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
     sub.paragraph_format.space_after = Pt(20)
 
-    # 問題編
+    # 【問題編】
     doc.add_heading("【問題編】", level=1)
     current_cat = ""
     for q_no, cat, pat, q_text, ans, f_text in questions:
         if cat != current_cat and mode_name == "分野別":
             current_cat = cat
             h2 = doc.add_heading(f"■ {current_cat}", level=2)
-            h2.paragraph_format.space_before = Pt(12)
-            
+            h2.paragraph_format.space_before = Pt(14)
+            h2.paragraph_format.space_after = Pt(6)
+
         p_q = doc.add_paragraph()
         p_q.paragraph_format.left_indent = Inches(0.2)
         p_q.paragraph_format.first_line_indent = Inches(-0.2)
-        p_q.add_run(f"({q_no}) ").bold = True
+        p_q.paragraph_format.space_after = Pt(4)
+
+        run_num = p_q.add_run(f"({q_no}) ")
+        run_num.bold = True
         p_q.add_run(q_text)
 
         p_ans = doc.add_paragraph()
         p_ans.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        p_ans.paragraph_format.space_after = Pt(14)
-        p_ans.add_run("答 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿").bold = True
+        p_ans.paragraph_format.space_after = Pt(16)
+        r_box = p_ans.add_run("答 ＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿")
+        r_box.font.bold = True
 
     doc.add_page_break()
 
-    # 解答編
+    # 【模範解答・解説編】
     doc.add_heading("【模範解答・解説編】", level=1)
     for q_no, cat, pat, q_text, ans, f_text in questions:
         p_sol = doc.add_paragraph()
-        p_sol.add_run(f"({q_no}) 正解： {ans}\n").bold = True
+        p_sol.paragraph_format.space_after = Pt(10)
+
+        r_n = p_sol.add_run(f"({q_no}) 正解： {ans}\n")
+        r_n.bold = True
+
         r_jp = p_sol.add_run(f"    【解説】 {f_text}\n")
-        r_jp.font.color.rgb = RGBColor(60, 60, 60)
-        
+        r_jp.font.color.rgb = RGBColor(50, 50, 50)
+
         if enable_trans and target_lang in TRANSLATION_DICT:
-            tr_res = translate_explanation(f_text, target_lang)
-            r_tr = p_sol.add_run(f"    【{target_lang}】 {tr_res}\n")
+            trans_res = translate_explanation(f_text, target_lang)
+            r_tr = p_sol.add_run(f"    【{target_lang}】 {trans_res}\n")
             r_tr.font.color.rgb = RGBColor(0, 102, 204)
             r_tr.font.size = Pt(9.5)
 
@@ -644,194 +664,225 @@ def create_word_bytes(questions, mode_name, enable_trans, target_lang):
     return buffer
 
 # ---------------------------------------------------------
-# 5. メイン画面UI
+# 5. メインGUI（exe版の完全再現：初期空欄・出題順編成）
 # ---------------------------------------------------------
-st.title("📝 計算実務能力検定 2級 問題作成＆練習アプリ")
+st.title("📝 計算実務能力検定 2級 文章問題ジェネレーター")
 
-tab1, tab2 = st.tabs(["🖨️ プリント作成（Word / CSV ダウンロード）", "📱 画面で問題を解く（Webドリル）"])
+# セッション状態の初期化（初期状態は空欄）
+if "selected_patterns" not in st.session_state:
+    st.session_state.selected_patterns = []
 
-# =========================================================
-# TAB 1: Word/CSV出力
-# =========================================================
-with tab1:
-    st.subheader("印刷・配布用プリントの自動生成")
-    col1, col2 = st.columns([1, 1])
+# --- 1. 出題順・パターン編成エリア ---
+st.subheader("1. 出題パターンの編成（初期状態：空欄）")
 
-    with col1:
-        mode_choice = st.radio(
-            "出題形式を選択:",
-            ["分野別（全20パターン網羅）", "模擬試験形式（本試験 8問1セット）", "パターン個別選択（苦手分野のみ）"]
-        )
-        
-        if mode_choice == "分野別（全20パターン網羅）":
-            count_val = st.number_input("各パターンの出題数:", min_value=1, max_value=50, value=2)
-            st.caption(f"合計 {count_val * 20} 問が生成されます")
-            selected_indices = list(range(20))
-        elif mode_choice == "模擬試験形式（本試験 8問1セット）":
-            count_val = st.number_input("模擬テストのセット数（回分）:", min_value=1, max_value=20, value=3)
-            st.caption(f"合計 {count_val * 8} 問（{count_val}回分）が生成されます")
-            selected_indices = []
-        else:
-            count_val = st.number_input("選択したパターンの各出題数:", min_value=1, max_value=50, value=2)
-            st.write("出題したいパターンにチェックを入れてください:")
-            selected_indices = []
-            cols = st.columns(2)
-            for i, p_name in enumerate(pattern_names):
-                with cols[i % 2]:
-                    if st.checkbox(p_name, value=(i < 4), key=f"chk_{i}"):
-                        selected_indices.append(i)
-            st.caption(f"合計 {count_val * len(selected_indices)} 問が生成されます")
+col_tools1, col_tools2, col_tools3 = st.columns(3)
+with col_tools1:
+    if st.button("📋 全20問を順番にセット", use_container_width=True):
+        st.session_state.selected_patterns = list(range(20))
+        st.rerun()
+with col_tools2:
+    if st.button("🎯 主要8問（本試験形式）をセット", use_container_width=True):
+        # 問1:定価, 問2:損益, 問3:仲立人, 問4:委託, 問5:為替, 問6:利息, 問7:手形日数, 問8:手形逆算
+        st.session_state.selected_patterns = [0, 2, 6, 9, 12, 14, 18, 19]
+        st.rerun()
+with col_tools3:
+    if st.button("🗑️ リストをクリア（空にする）", use_container_width=True):
+        st.session_state.selected_patterns = []
+        st.rerun()
 
-    with col2:
-        st.write("留学生向け解説翻訳の設定:")
-        selected_lang = st.selectbox("解説に併記する言語:", LANG_OPTIONS, index=0)
-        has_trans = (selected_lang != "なし（日本語のみ）")
+st.write("---")
 
-        st.divider()
-        generate_clicked = st.button("🚀 問題セットを生成する", type="primary", use_container_width=True)
+col_left, col_right = st.columns([1, 1])
 
-    if generate_clicked:
+# 左側：パターン一覧と追加
+with col_left:
+    st.markdown("**【利用可能な全20パターン】**")
+    add_choice = st.selectbox("追加したいパターンを選択:", pattern_names, index=0)
+    if st.button("➕ 出題リストに追加する", use_container_width=True):
+        p_idx = pattern_names.index(add_choice)
+        st.session_state.selected_patterns.append(p_idx)
+        st.rerun()
+
+    st.caption("※上の「全20問をセット」を押すと一度に全パターンが読み込まれます。")
+
+# 右側：現在の出題リスト（並べ替え・削除）
+with col_right:
+    st.markdown(f"**【現在の出題順リスト（計 {len(st.session_state.selected_patterns)} 問）】**")
+    if not st.session_state.selected_patterns:
+        st.info("← 左の「追加」ボタン、または上の「全20問をセット」を押して出題パターンを追加してください。（現在は空欄です）")
+    else:
+        for pos, p_idx in enumerate(st.session_state.selected_patterns):
+            r_col1, r_col2, r_col3, r_col4 = st.columns([6, 1, 1, 1])
+            with r_col1:
+                st.write(f"**第{pos+1}問:** {pattern_names[p_idx]}")
+            with r_col2:
+                if st.button("▲", key=f"up_{pos}", disabled=(pos == 0)):
+                    st.session_state.selected_patterns[pos-1], st.session_state.selected_patterns[pos] = (
+                        st.session_state.selected_patterns[pos], st.session_state.selected_patterns[pos-1]
+                    )
+                    st.rerun()
+            with r_col3:
+                if st.button("▼", key=f"down_{pos}", disabled=(pos == len(st.session_state.selected_patterns) - 1)):
+                    st.session_state.selected_patterns[pos+1], st.session_state.selected_patterns[pos] = (
+                        st.session_state.selected_patterns[pos], st.session_state.selected_patterns[pos+1]
+                    )
+                    st.rerun()
+            with r_col4:
+                if st.button("❌", key=f"del_{pos}"):
+                    st.session_state.selected_patterns.pop(pos)
+                    st.rerun()
+
+st.write("---")
+
+# --- 2. 出題設定・留学生翻訳・出力形式 ---
+st.subheader("2. 作成設定 & 留学生翻訳")
+
+col_opt1, col_opt2 = st.columns(2)
+
+with col_opt1:
+    repeat_count = st.number_input(
+        "各パターンの出題数（繰り返し回数）:",
+        min_value=1, max_value=50, value=1,
+        help="リストに入っている各パターンについて、異なる数値を何問ずつ生成するかを指定します。"
+    )
+    total_q_count = len(st.session_state.selected_patterns) * repeat_count
+    st.markdown(f"**生成予定の総問題数: `{total_q_count}` 問**")
+    
+    is_shuffle = st.checkbox("出題順をランダムにする（シャッフル）", value=False)
+
+with col_opt2:
+    enable_trans = st.checkbox("留学生向け解説翻訳を有効にする（問題文は日本語固定）", value=True)
+    target_lang = st.selectbox(
+        "翻訳言語:",
+        LANG_OPTIONS,
+        index=0,
+        disabled=not enable_trans
+    )
+
+    st.markdown("**出力ファイル形式（複数選択可）:**")
+    f_col1, f_col2, f_col3 = st.columns(3)
+    with f_col1:
+        out_docx = st.checkbox("Word (.docx)", value=True)
+    with f_col2:
+        out_csv = st.checkbox("CSV (.csv)", value=True)
+    with f_col3:
+        out_txt = st.checkbox("テキスト (.txt)", value=False)
+
+st.write("---")
+
+# --- 3. 生成実行ボタン ---
+btn_run = st.button("🚀 問題セットを一括生成する", type="primary", use_container_width=True)
+
+if btn_run:
+    if not st.session_state.selected_patterns:
+        st.error("出題リストが空です。パターンを追加するか、「全20問をセット」を押してください。")
+    elif not (out_docx or out_csv or out_txt):
+        st.error("出力ファイル形式を少なくとも1つ選択してください。")
+    else:
+        # 作問処理（exe版と完全同一）
         questions = []
         q_no = 1
         
-        if mode_choice == "分野別（全20パターン網羅）":
-            for gen in generators:
-                for idx in range(count_val):
-                    cat, pat, q_t, a_t, f_t = gen(idx)
-                    questions.append((q_no, cat, pat, q_t, a_t, f_t))
-                    q_no += 1
-        elif mode_choice == "模擬試験形式（本試験 8問1セット）":
-            for set_idx in range(count_val):
-                chosen_gens = [
-                    random.choice([gen_p1, gen_p2]),
-                    random.choice([gen_p3, gen_p4, gen_p5, gen_p6]),
-                    random.choice([gen_p7, gen_p8, gen_p9]),
-                    random.choice([gen_p10, gen_p11, gen_p12]),
-                    random.choice([gen_p13, gen_p14]),
-                    random.choice([gen_p15, gen_p16, gen_p17, gen_p18]),
-                    gen_p19,
-                    gen_p20
-                ]
-                for p_idx, gen in enumerate(chosen_gens, start=1):
-                    cat, pat, q_t, a_t, f_t = gen(set_idx * 8 + p_idx)
-                    questions.append((q_no, f"第{set_idx+1}回 問{p_idx}", pat, q_t, a_t, f_t))
-                    q_no += 1
-        else:
-            if not selected_indices:
-                st.error("パターンが1つも選択されていません。")
-            else:
-                for idx in selected_indices:
-                    gen = generators[idx]
-                    for c in range(count_val):
-                        cat, pat, q_t, a_t, f_t = gen(c)
-                        questions.append((q_no, cat, pat, q_t, a_t, f_t))
-                        q_no += 1
+        # 出題リストのパターンインデックスを展開
+        pattern_sequence = []
+        for c in range(repeat_count):
+            for p_idx in st.session_state.selected_patterns:
+                pattern_sequence.append((p_idx, c))
 
-        if questions:
-            st.session_state["generated_questions"] = questions
-            st.session_state["has_trans"] = has_trans
-            st.session_state["target_lang"] = selected_lang
-            st.session_state["mode_name"] = mode_choice
+        if is_shuffle:
+            random.shuffle(pattern_sequence)
 
-    if "generated_questions" in st.session_state:
-        qs = st.session_state["generated_questions"]
-        st.success(f"全 {len(qs)} 問の生成が完了しました！下のボタンからダウンロードできます。")
-        
-        # Wordダウンロード
-        word_buf = create_word_bytes(
-            qs,
-            st.session_state["mode_name"],
-            st.session_state["has_trans"],
-            st.session_state["target_lang"]
-        )
-        
-        # CSVダウンロード
-        csv_buf = io.StringIO()
-        writer = csv.writer(csv_buf)
-        header = ["番号", "分類/回次", "パターン", "問題文", "模範解答", "解説"]
-        if st.session_state["has_trans"]:
-            header.append(f"解説({st.session_state['target_lang']})")
-        writer.writerow(header)
-        for r in qs:
-            row_data = list(r)
-            if st.session_state["has_trans"]:
-                row_data.append(translate_explanation(r[5], st.session_state["target_lang"]))
-            writer.writerow(row_data)
+        for p_idx, c_idx in pattern_sequence:
+            gen_func = generators[p_idx]
+            cat, pat, q_text, ans, f_text = gen_func(c_idx + random.randint(1, 100))
+            questions.append((q_no, cat, pat, q_text, ans, f_text))
+            q_no += 1
 
-        dl_col1, dl_col2 = st.columns(2)
-        with dl_col1:
+        st.session_state["last_questions"] = questions
+        st.session_state["last_enable_trans"] = enable_trans
+        st.session_state["last_target_lang"] = target_lang
+        st.session_state["out_docx"] = out_docx
+        st.session_state["out_csv"] = out_csv
+        st.session_state["out_txt"] = out_txt
+
+# --- 4. ダウンロード & プレビュー表示エリア ---
+if "last_questions" in st.session_state and st.session_state["last_questions"]:
+    qs = st.session_state["last_questions"]
+    e_trans = st.session_state["last_enable_trans"]
+    t_lang = st.session_state["last_target_lang"]
+    
+    st.success(f"🎉 全 {len(qs)} 問の生成が完了しました！下のボタンからダウンロードしてください。")
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    dl_cols = st.columns(3)
+
+    # Wordダウンロード
+    if st.session_state.get("out_docx", True):
+        word_buf = create_word_bytes(qs, "カスタム編成", e_trans, t_lang)
+        with dl_cols[0]:
             st.download_button(
-                label="📥 Word文書（.docx）をダウンロード",
+                label="📥 Word文書 (.docx) を保存",
                 data=word_buf,
-                file_name=f"keisan2kyu_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx",
+                file_name=f"keisan2kyu_{len(qs)}q_{timestamp}.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 type="primary",
                 use_container_width=True
             )
-        with dl_col2:
+
+    # CSVダウンロード
+    if st.session_state.get("out_csv", True):
+        csv_buf = io.StringIO()
+        writer = csv.writer(csv_buf)
+        headers = ["番号", "分類", "パターン", "問題文", "模範解答", "解説(JP)"]
+        if e_trans:
+            headers.append(f"解説({t_lang})")
+        writer.writerow(headers)
+        for q_n, cat, pat, q_t, a_t, f_t in qs:
+            row_data = [q_n, cat, pat, q_t, a_t, f_t]
+            if e_trans:
+                row_data.append(translate_explanation(f_t, t_lang))
+            writer.writerow(row_data)
+
+        with dl_cols[1]:
             st.download_button(
-                label="📥 CSVファイル（.csv）をダウンロード",
+                label="📥 CSVファイル (.csv) を保存",
                 data=csv_buf.getvalue().encode("utf-8-sig"),
-                file_name=f"keisan2kyu_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                file_name=f"keisan2kyu_{len(qs)}q_{timestamp}.csv",
                 mime="text/csv",
                 use_container_width=True
             )
 
-        with st.expander("作成された問題のプレビュー（先頭3問）", expanded=True):
-            for q_n, cat, pat, q_t, a_t, f_t in qs[:3]:
-                st.markdown(f"**({q_n}) [{cat}]** {q_t}")
-                st.markdown(f"**答:** `{a_t}`")
-                st.caption(f"解説: {f_t}")
-                if st.session_state["has_trans"]:
-                    st.caption(f"翻訳: {translate_explanation(f_t, st.session_state['target_lang'])}")
-                st.write("---")
+    # テキストダウンロード
+    if st.session_state.get("out_txt", False):
+        txt_lines = [
+            f"【問題編】 全{len(qs)}問\n\n"
+        ]
+        for q_n, cat, pat, q_t, a_t, f_t in qs:
+            txt_lines.append(f"({q_n}) {q_t}\n\n")
+        txt_lines.append("\n【解答編】\n\n")
+        for q_n, cat, pat, q_t, a_t, f_t in qs:
+            txt_lines.append(f"({q_n}) 答：{a_t}  ｜ 解説：{f_t}\n")
+            if e_trans:
+                txt_lines.append(f"    翻訳[{t_lang}]：{translate_explanation(f_t, t_lang)}\n")
+            txt_lines.append("\n")
+        txt_str = "".join(txt_lines)
 
-# =========================================================
-# TAB 2: オンラインWebドリル
-# =========================================================
-with tab2:
-    st.subheader("電卓を叩いてその場で解く（Webドリル）")
+        with dl_cols[2]:
+            st.download_button(
+                label="📥 テキスト (.txt) を保存",
+                data=txt_str.encode("utf-8"),
+                file_name=f"keisan2kyu_{len(qs)}q_{timestamp}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
 
-    col_drill1, col_drill2 = st.columns([1, 1])
-    with col_drill1:
-        pattern_select = st.selectbox(
-            "練習したいパターン:",
-            ["🎲 全20パターンからランダム出題"] + pattern_names
-        )
-    with col_drill2:
-        drill_lang = st.selectbox("解説の表示言語:", LANG_OPTIONS, index=1, key="drill_lang")
-
-    # 新しい問題の読み込み
-    if "current_q" not in st.session_state or st.button("🔄 別の問題を出す", use_container_width=True):
-        if pattern_select == "🎲 全20パターンからランダム出題":
-            gen_func = random.choice(generators)
-        else:
-            p_idx = pattern_names.index(pattern_select)
-            gen_func = generators[p_idx]
-        
-        cat, pat, q_t, a_t, f_t = gen_func(random.randint(1, 9999))
-        st.session_state["current_q"] = (cat, pat, q_t, a_t, f_t)
-        st.session_state["answered"] = False
-
-    cat, pat, q_t, a_t, f_t = st.session_state["current_q"]
-
-    st.info(f"**【{cat} - {pat}】**\n\n{q_t}")
-
-    # 解答入力
-    user_ans = st.text_input("あなたの解答（数値のみ入力でOK）:", key="ans_input")
-    
-    if st.button("判定する", type="primary"):
-        st.session_state["answered"] = True
-        
-        # 簡易正誤比較（記号やカンマを除去）
-        clean_user = user_ans.replace(",", "").replace("￥", "").replace("€", "").replace("＄", "").replace("円", "").strip()
-        clean_ans = a_t.replace(",", "").replace("￥", "").replace("€", "").replace("＄", "").replace("円", "").strip()
-
-        if clean_user == clean_ans or user_ans.strip() == a_t.strip():
-            st.success(f"⭕ 正解です！ 正解：{a_t}")
-        else:
-            st.error(f"❌ 不正解... 正解：{a_t}")
-
-        st.markdown(f"**【計算式・解説】**\n\n{f_t}")
-        if drill_lang != "なし（日本語のみ）":
-            st.markdown(f"**【{drill_lang} 解説】**\n\n{translate_explanation(f_t, drill_lang)}")
+    # プレビュー表示（exe版のプレビュー枠を再現）
+    st.write("---")
+    st.subheader("生成プレビュー（冒頭の3問）")
+    for q_n, cat, pat, q_t, a_t, f_t in qs[:3]:
+        with st.container(border=True):
+            st.markdown(f"**({q_n}) [{pat}]** {q_t}")
+            st.markdown(f"**正解：** `{a_t}`")
+            st.caption(f"解説： {f_text}")
+            if e_trans:
+                st.caption(f"翻訳 [{t_lang}]： {translate_explanation(f_t, t_lang)}")
